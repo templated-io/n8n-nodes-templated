@@ -19,7 +19,7 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 
 ## Operations
 
-With Templated.io you can create images or PDFs from dynamic templates. Here are the operations you can use:
+With Templated you can create images or PDFs from dynamic templates. Here are the operations you can use:
 
 | Name | Operation | Description | Documentation Link |
 |------|-----------|-------------|-------------------|
@@ -32,7 +32,7 @@ With Templated.io you can create images or PDFs from dynamic templates. Here are
 
 ## Credentials
 
-To use this node, you need to authenticate with Templated.io using an API key.
+To use this node, you need to authenticate with Templated using an API key.
 
 ### Prerequisites
 1. Sign up for a [Templated account](https://templated.io)
@@ -40,8 +40,8 @@ To use this node, you need to authenticate with Templated.io using an API key.
 3. Generate an API key from your account dashboard
 
 ### Authentication Setup
-1. In n8n, create new credentials for "Templated.io API"
-2. Enter your API key obtained from Templated.io
+1. In n8n, create new credentials for "Templated API"
+2. Enter your API key obtained from Templated
 3. Test the connection to ensure it's working properly
 
 ## Compatibility
@@ -49,7 +49,7 @@ To use this node, you need to authenticate with Templated.io using an API key.
 - **Minimum n8n version**: 0.174.0
 - **Tested with n8n versions**: 0.174.0, 1.0.0+
 
-This node uses the Templated.io v1 API and should remain compatible with future versions of the service.
+This node uses the Templated API and should remain compatible with future versions of the service.
 
 ## Usage
 
@@ -71,6 +71,5 @@ The node integrates seamlessly with other n8n nodes, allowing you to pull data f
 ## Resources
 
 * [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
-* [Templated.io documentation](https://templated.io/docs)
-* [Templated.io API documentation](https://templated.io/docs)
+* [Templated API documentation](https://templated.io/docs)
 * [Template Gallery](https://templated.io/templates)
