@@ -36,8 +36,8 @@ To use this node, you need to authenticate with Templated using an API key.
 
 ### Prerequisites
 1. Sign up for a [Templated account](https://templated.io)
-2. Create templates using the Templated.io editor
-3. Generate an API key from your account dashboard
+2. Create a template using the Templated Editor
+3. Get your API key from your account dashboard
 
 ### Authentication Setup
 1. In n8n, create new credentials for "Templated API"
