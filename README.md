@@ -1,48 +1,76 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
+# n8n-nodes-templated
 
-# n8n-nodes-starter
+This is an n8n community node. It lets you use Templated in your n8n workflows.
 
-This repo contains example nodes to help you get started building your own custom integrations for [n8n](https://n8n.io). It includes the node linter and other dependencies.
+Templated is a powerful image and PDF generation service that allows you to create dynamic visual content from templates. With it's drag-and-drop editor and robust API, you can automate the creation of marketing images, social media posts, banners, PDFs, and more.
 
-To make your custom node available to the community, you must create it as an npm package, and [submit it to the npm registry](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry).
+[n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-If you would like your node to be available on n8n cloud you can also [submit your node for verification](https://docs.n8n.io/integrations/creating-nodes/deploy/submit-community-nodes/).
+[Installation](#installation)  
+[Operations](#operations)  
+[Credentials](#credentials)  
+[Compatibility](#compatibility)  
+[Usage](#usage)  
+[Resources](#resources)  
 
-## Prerequisites
+## Installation
 
-You need the following installed on your development machine:
+Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-* [git](https://git-scm.com/downloads)
-* Node.js and npm. Minimum version Node 20. You can find instructions on how to install both using nvm (Node Version Manager) for Linux, Mac, and WSL [here](https://github.com/nvm-sh/nvm). For Windows users, refer to Microsoft's guide to [Install NodeJS on Windows](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows).
-* Install n8n with:
-  ```
-  npm install n8n -g
-  ```
-* Recommended: follow n8n's guide to [set up your development environment](https://docs.n8n.io/integrations/creating-nodes/build/node-development-environment/).
+## Operations
 
-## Using this starter
+With Templated.io you can create images or PDFs from dynamic templates. Here are the operations you can use:
 
-These are the basic steps for working with the starter. For detailed guidance on creating and publishing nodes, refer to the [documentation](https://docs.n8n.io/integrations/creating-nodes/).
+| Name | Operation | Description | Documentation Link |
+|------|-----------|-------------|-------------------|
+| Create Render | render:create | Creates an image or PDF file with JSON data and your template. Supports JPEG, PNG, WebP, and PDF formats. | [Link](https://templated.io/docs/renders/create/) |
+| Retrieve Render | render:retrieve | Retrieves a specific render by its ID to check status and get the generated file URL. | [Link](https://templated.io/docs/renders/retrieve/) |
+| Retrieve Template | template:retrieve | Retrieves details of a specific template by its ID. | [Link](https://templated.io/docs/templates/retrieve/) |
+| List All Templates | template:list | Lists all templates in your account with pagination and filtering options. | [Link](https://templated.io/docs/templates/list/) |
+| List Template Layers | template:layers | Lists all available layers of a specific template for customization. | [Link](https://templated.io/docs/templates/layers/) |
+| List Template Renders | template:renders | Lists all renders created from a specific template. | [Link](https://templated.io/docs/templates/renders/) |
 
-1. [Generate a new repository](https://github.com/n8n-io/n8n-nodes-starter/generate) from this template repository.
-2. Clone your new repo:
-   ```
-   git clone https://github.com/<your organization>/<your-repo-name>.git
-   ```
-3. Run `npm i` to install dependencies.
-4. Open the project in your editor.
-5. Browse the examples in `/nodes` and `/credentials`. Modify the examples, or replace them with your own nodes.
-6. Update the `package.json` to match your details.
-7. Run `npm run lint` to check for errors or `npm run lintfix` to automatically fix errors when possible.
-8. Test your node locally. Refer to [Run your node locally](https://docs.n8n.io/integrations/creating-nodes/test/run-node-locally/) for guidance.
-9. Replace this README with documentation for your node. Use the [README_TEMPLATE](README_TEMPLATE.md) to get started.
-10. Update the LICENSE file to use your details.
-11. [Publish](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry) your package to npm.
+## Credentials
 
-## More information
+To use this node, you need to authenticate with Templated.io using an API key.
 
-Refer to our [documentation on creating nodes](https://docs.n8n.io/integrations/creating-nodes/) for detailed information on building your own nodes.
+### Prerequisites
+1. Sign up for a [Templated account](https://templated.io)
+2. Create templates using the Templated.io editor
+3. Generate an API key from your account dashboard
 
-## License
+### Authentication Setup
+1. In n8n, create new credentials for "Templated.io API"
+2. Enter your API key obtained from Templated.io
+3. Test the connection to ensure it's working properly
 
-[MIT](https://github.com/n8n-io/n8n-nodes-starter/blob/master/LICENSE.md)
+## Compatibility
+
+- **Minimum n8n version**: 0.174.0
+- **Tested with n8n versions**: 0.174.0, 1.0.0+
+
+This node uses the Templated.io v1 API and should remain compatible with future versions of the service.
+
+## Usage
+
+This node is perfect for automating visual content creation in your workflows. Common use cases include:
+
+- **Marketing Automation**: Generate personalized social media posts, banners, or ads
+- **E-commerce**: Create product images with dynamic pricing or promotional text
+- **Document Generation**: Generate certificates, invoices, or reports in PDF format
+- **SaaS Applications**: Create user-specific images or documents
+- **Social Media**: Automate the creation of branded posts with dynamic content
+
+### Example Workflow
+1. Trigger on new data (e.g., new product, customer, or event)
+2. Use the Templated node to generate a personalized image or PDF
+3. Share the generated content via email, social media, or file storage
+
+The node integrates seamlessly with other n8n nodes, allowing you to pull data from databases, APIs, or webhooks to populate your templates dynamically.
+
+## Resources
+
+* [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
+* [Templated.io documentation](https://templated.io/docs)
+* [Templated.io API documentation](https://templated.io/docs)
+* [Template Gallery](https://templated.io/templates)
