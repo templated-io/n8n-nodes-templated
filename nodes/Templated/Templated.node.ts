@@ -9,7 +9,7 @@ export class Templated implements INodeType {
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		description: 'n8n node to automate the generation of images and PDFs.',
+		description: 'n8n node to automate the generation of images and PDFs with Templated (https://templated.io).',
 		defaults: {
 			name: 'Templated',
 		},
