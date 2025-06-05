@@ -1,19 +1,19 @@
 {
-  "name": "@digital-boss/n8n-nodes-templated",
+  "name": "n8n-nodes-templated",
   "version": "0.1.0",
-  "description": "n8n node to automate the generation of images and PDFs.",
+  "description": "n8n node to automate the generation of images and PDFs with Templated (https://templated.io).",
   "keywords": [
     "n8n-community-node-package"
   ],
   "license": "MIT",
   "homepage": "https://n8n.io",
   "author": {
-    "name": "Stanimira Rikova",
-    "email": "stanimira.rikova@digital-boss.de"
+    "name": "Peter Fields",
+    "email": "peter@templated.io"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/digital-boss/n8n-nodes-templated"
+    "url": "https://github.com/templated-io/n8n-nodes-templated"
   },
   "engines": {
     "node": ">=18.10",
