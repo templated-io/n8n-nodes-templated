@@ -1,59 +1,46 @@
 /* eslint-disable n8n-nodes-base/node-param-fixed-collection-type-unsorted-items */
 import type { INodeProperties } from 'n8n-workflow';
-import { showFor } from './utils';
-import { renderPresend } from '../GenericFunctions';
-
-const displayOpts = showFor(['renders']);
-
-const displayFor = {
-	resource: displayOpts(),
-	createRender: displayOpts(['create']),
-	retrieveRender: displayOpts(['retrieveRender']),
-};
-
-const renderOperations: INodeProperties = {
-	displayName: 'Operation',
-	name: 'operation',
-	type: 'options',
-	displayOptions: displayFor.resource.displayOptions,
-	noDataExpression: true,
-	default: 'create',
-	options: [
-		{
-			name: 'Create a Render',
-			value: 'create',
-			action: 'Create a render',
-			routing: {
-				send: { preSend: [renderPresend] },
-				request: {
-					method: 'POST',
-					url: '/v1/render',
-				}
-			},
-		},
-		{
-			name: 'Retrieve a Render',
-			value: 'retrieveRender',
-			action: 'Retrieve a render',
-			routing: {
-				request: {
-					method: 'GET',
-					url: '=/v1/render/{{$parameter["renderId"]}}',
-				},
-			},
-		},
-	],
-};
 
 const renderFields: INodeProperties[] = [
 	{
-		displayName: 'Template ID',
+		displayName: 'Template',
 		name: 'template',
-		type: 'string',
+		type: 'resourceLocator',
+		default: { mode: 'list', value: '' },
 		required: true,
-		default: '',
-		description: 'The template ID that you want to use',
-		displayOptions: displayFor.createRender.displayOptions,
+		description: 'The template to use for rendering',
+		displayOptions: {
+			show: {
+				operation: ['createRender'],
+			},
+		},
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				placeholder: 'Select a template...',
+				typeOptions: {
+					searchListMethod: 'loadTemplates',
+					searchable: true,
+				},
+			},
+			{
+				displayName: 'By ID',
+				name: 'id',
+				type: 'string',
+				placeholder: 'e.g. 6c32c8c8-f9d0-4e2f-8b5a-3f1a8d9c5b2e',
+				validation: [
+					{
+						type: 'regex',
+						properties: {
+							regex: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+							errorMessage: 'Not a valid template ID',
+						},
+					},
+				],
+			},
+		],
 	},
 	{
 		displayName: 'Format',
@@ -67,7 +54,11 @@ const renderFields: INodeProperties[] = [
 		],
 		default: 'jpg',
 		description: 'Render format (jpg, png, webp, or pdf). Default is jpg.',
-		displayOptions: displayFor.createRender.displayOptions,
+		displayOptions: {
+			show: {
+				operation: ['createRender'],
+			},
+		},
 	},
 	{
 		displayName: 'Layers',
@@ -110,21 +101,21 @@ const renderFields: INodeProperties[] = [
 						name: 'color',
 						type: 'color',
 						default: '',
-						description: 'Text color in hex format e.g.	“#FF0000”',
+						description: 'Text color in hex format e.g.	"#FF0000"',
 					},
 					{
 						displayName: 'Background',
 						name: 'background',
 						type: 'color',
 						default: '',
-						description: 'Background color in hex format e.g.	“#FF0000”',
+						description: 'Background color in hex format e.g.	"#FF0000"',
 					},
 					{
 						displayName: 'Border Color',
 						name: 'border_color',
 						type: 'color',
 						default: '',
-						description: 'Border color in hex format e.g.	“#FF0000”',
+						description: 'Border color in hex format e.g.	"#FF0000"',
 					},
 					{
 						displayName: 'Border Width',
@@ -145,14 +136,14 @@ const renderFields: INodeProperties[] = [
 						name: 'fill',
 						type: 'color',
 						default: '',
-						description: 'Shape fill color in hex format e.g.	“#FF0000”',
+						description: 'Shape fill color in hex format e.g.	"#FF0000"',
 					},
 					{
 						displayName: 'Stroke',
 						name: 'stroke',
 						type: 'color',
 						default: '',
-						description: 'Shape stroke (border) color in hex format e.g.	“#FF0000”',
+						description: 'Shape stroke (border) color in hex format e.g.	"#FF0000"',
 					},
 					{
 						displayName: 'Hide',
@@ -164,23 +155,23 @@ const renderFields: INodeProperties[] = [
 				],
 			},
 		],
-		displayOptions: displayFor.createRender.displayOptions,
+		displayOptions: {
+			show: {
+				operation: ['createRender'],
+			},
+		},
 	},
-	// {
-	// 	displayName: 'Webhook URL',
-	// 	name: 'webhookUrl',
-	// 	type: 'string',
-	// 	default: '',
-	// 	description: 'A URL to POST the full Render object to upon rendering completed',
-	// 	displayOptions: displayFor.createRender.displayOptions,
-	// },
 	{
 		displayName: 'Transparent Background',
 		name: 'transparent',
 		type: 'boolean',
 		default: false,
 		description: 'Whether make the background transparent when the render format is png. Default is false.',
-		displayOptions: displayFor.createRender.displayOptions,
+		displayOptions: {
+			show: {
+				operation: ['createRender'],
+			},
+		},
 	},
 	{
 		displayName: 'Render ID',
@@ -189,8 +180,56 @@ const renderFields: INodeProperties[] = [
 		required: true,
 		default: '',
 		description: 'The ID of the render to retrieve',
-		displayOptions: displayFor.retrieveRender.displayOptions,
+		displayOptions: {
+			show: {
+				operation: ['retrieveRender'],
+			},
+		},
+	},
+	{
+		displayName: 'Renders',
+		name: 'renders',
+		type: 'fixedCollection',
+		placeholder: 'Add Render',
+		typeOptions: {
+			multipleValues: true,
+		},
+		default: {},
+		required: true,
+		options: [
+			{
+				displayName: 'Render',
+				name: 'render',
+				values: [
+					{
+						displayName: 'Render ID',
+						name: 'renderId',
+						type: 'string',
+						default: '',
+						placeholder: 'e.g. 94600fbf-8b9c-452e-a920-e3fbe4607d22',
+						description: 'The ID of the render to merge',
+					},
+				],
+			},
+		],
+		displayOptions: {
+			show: {
+				operation: ['mergeRenders'],
+			},
+		},
+	},
+	{
+		displayName: 'Host File',
+		name: 'host',
+		type: 'boolean',
+		default: true,
+		description: 'Whether to host the merged PDF file and return a URL (true) or return the PDF file directly (false)',
+		displayOptions: {
+			show: {
+				operation: ['mergeRenders'],
+			},
+		},
 	},
 ];
 
-export { renderOperations, renderFields };
+export { renderFields };

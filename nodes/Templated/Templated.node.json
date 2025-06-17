@@ -8,12 +8,12 @@
 	"resources": {
 		"credentialDocumentation": [
 			{
-				"url": ""
+				"url": "https://templated.io/docs/authentication/"
 			}
 		],
 		"primaryDocumentation": [
 			{
-				"url": ""
+				"url": "https://templated.io/docs/"
 			}
 		]
 	}

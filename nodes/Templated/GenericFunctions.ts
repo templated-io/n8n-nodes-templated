@@ -1,4 +1,4 @@
-import type { IExecuteSingleFunctions, IHttpRequestOptions } from 'n8n-workflow';
+import type { IExecuteSingleFunctions, IHttpRequestOptions, ILoadOptionsFunctions, INodeListSearchResult } from 'n8n-workflow';
 
 const addOptName = 'additionalOptions';
 
@@ -69,16 +69,90 @@ const transformLayers = (opts: IHttpRequestOptions): IHttpRequestOptions => {
 	return opts;
 };
 
-
-
 const transformSingleProp = (prop: string) => (values: any) =>
 	(values.itemChoice || []).map((i: any) => i[prop]);
+
+export async function loadTemplates(
+	this: ILoadOptionsFunctions,
+	filter?: string,
+	paginationToken?: string,
+): Promise<INodeListSearchResult> {
+	try {
+		const credentials = await this.getCredentials('templatedApi');
+		
+		const options: IHttpRequestOptions = {
+			method: 'GET',
+			baseURL: credentials.baseUrl as string,
+			url: '/v1/templates',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+			},
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'templatedApi', options);
+		
+		if (Array.isArray(response)) {
+			if (response.length === 0) {
+				return { 
+					results: [{
+						name: 'No templates found',
+						value: 'no-templates',
+						description: 'Your account has no templates yet'
+					}]
+				};
+			}
+
+			let templates = response.map((template: any) => ({
+				name: template.name || `Template ${template.id}`,
+				value: template.id,
+				description: template.description || `${template.width}x${template.height}`,
+			}));
+
+			// Apply filter if provided
+			if (filter) {
+				const filterLower = filter.toLowerCase();
+				templates = templates.filter((template) =>
+					template.name.toLowerCase().includes(filterLower) ||
+					(template.description && template.description.toLowerCase().includes(filterLower))
+				);
+			}
+
+			return {
+				results: templates,
+			};
+		} else {
+			return { 
+				results: [{
+					name: `Debug: Response type ${typeof response}`,
+					value: 'debug',
+					description: `Expected array, got: ${JSON.stringify(response).substring(0, 100)}`
+				}]
+			};
+		}
+	} catch (error) {
+		// Return error info for debugging
+		return { 
+			results: [{
+				name: `Error: ${error.message}`,
+				value: 'error',
+				description: 'Check credentials and API endpoint'
+			}]
+		};
+	}
+}
 
 export async function renderPresend(
 	this: IExecuteSingleFunctions,
 	opts: IHttpRequestOptions,
 ): Promise<IHttpRequestOptions> {
 	const params = getAllParams(this);
+
+	// Handle resource locator for template parameter
+	if (params.template && typeof params.template === 'object') {
+		const templateLocator = params.template as { mode: string; value: string };
+		params.template = templateLocator.value;
+	}
 
 	opts.body = formatParams(
 		params,
@@ -106,6 +180,12 @@ export async function templatePresend(
 ): Promise<IHttpRequestOptions> {
 	const params = getAllParams(this);
 
+	// Handle resource locator for templateId parameter
+	if (params.templateId && typeof params.templateId === 'object') {
+		const templateLocator = params.templateId as { mode: string; value: string };
+		params.templateId = templateLocator.value;
+	}
+
 	opts.body = formatParams(
 			params,
 			{
@@ -114,6 +194,23 @@ export async function templatePresend(
 					limit: (value) => typeof value === 'number',
 			},
 	);
+
+	return opts;
+}
+
+export async function mergeRendersPresend(
+	this: IExecuteSingleFunctions,
+	opts: IHttpRequestOptions,
+): Promise<IHttpRequestOptions> {
+	const params = getAllParams(this);
+
+	// Extract render IDs from the fixed collection
+	const renderIds = (params.renders as { render: Array<{ renderId: string }> }).render.map(r => r.renderId);
+
+	opts.body = {
+		ids: renderIds,
+		host: params.host,
+	};
 
 	return opts;
 }
