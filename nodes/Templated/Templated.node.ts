@@ -6,7 +6,7 @@ export class Templated implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Templated',
 		name: 'templated',
-		icon: 'file:templated.svg',
+		icon: 'file:templated.png',
 		group: ['transform'],
 		version: 1,
 		subtitle: `={{
