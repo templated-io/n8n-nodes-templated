@@ -1,4 +1,4 @@
-import type { IExecuteSingleFunctions, IHttpRequestOptions, ILoadOptionsFunctions, INodeListSearchResult } from 'n8n-workflow';
+import type { IExecuteSingleFunctions, IHttpRequestOptions, ILoadOptionsFunctions, INodeListSearchResult, INodePropertyOptions } from 'n8n-workflow';
 
 const addOptName = 'additionalOptions';
 
@@ -33,44 +33,10 @@ const formatParams = (
 	);
 };
 
-const idFn = (i: any) => i;
-
 interface Layer {
 	layerName: string;
 	[key: string]: any; // Allow additional properties
 }
-
-const transformLayers = (opts: IHttpRequestOptions): IHttpRequestOptions => {
-	if (opts.body && typeof opts.body === 'object') {
-			const layers = (opts.body as any).layers;
-
-			if (typeof layers === 'object' && Array.isArray(layers.layer)) {
-					(opts.body as any).layers = layers.layer.reduce((acc: Record<string, any>, layer: Layer) => {
-							if (layer.layerName) {
-									// Create a new layer object excluding empty or false properties
-									const cleanedLayer = Object.entries(layer).reduce((cleaned: Record<string, any>, [key, value]) => {
-											// Remove properties that are empty, false, null, undefined, or 0
-											if (value !== '' && value !== false && value !== null && value !== undefined && value !== 0) {
-													cleaned[key] = value;
-											}
-											return cleaned;
-									}, {} as Record<string, any>);
-
-									// Remove the `layerName` property
-									delete cleanedLayer.layerName;
-
-									// Assign the cleaned layer object to the `layerName` key
-									acc[layer.layerName] = cleanedLayer;
-							}
-							return acc;
-					}, {});
-			}
-	}
-	return opts;
-};
-
-const transformSingleProp = (prop: string) => (values: any) =>
-	(values.itemChoice || []).map((i: any) => i[prop]);
 
 export async function loadTemplates(
 	this: ILoadOptionsFunctions,
@@ -142,6 +108,84 @@ export async function loadTemplates(
 	}
 }
 
+/**
+ * Load template layers for the dropdown
+ */
+export async function loadTemplateLayers(
+	this: ILoadOptionsFunctions,
+): Promise<INodePropertyOptions[]> {
+	try {
+		// Get the template ID from the template parameter
+		const templateParam = this.getNodeParameter('template', 0) as { mode: string; value: string } | string;
+		let templateId: string;
+
+		if (typeof templateParam === 'object' && templateParam.value) {
+			templateId = templateParam.value;
+		} else if (typeof templateParam === 'string') {
+			templateId = templateParam;
+		} else {
+			return [{
+				name: 'Select a template first',
+				value: '',
+				description: 'Choose a template above to load its layers',
+			}];
+		}
+
+		if (!templateId || templateId === 'no-templates' || templateId === 'error') {
+			return [{
+				name: 'Select a template first',
+				value: '',
+				description: 'Choose a template above to load its layers',
+			}];
+		}
+
+		const credentials = await this.getCredentials('templatedApi');
+
+		const options: IHttpRequestOptions = {
+			method: 'GET',
+			baseURL: credentials.baseUrl as string,
+			url: `/v1/template/${templateId}/layers`,
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+			},
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'templatedApi', options);
+
+		if (Array.isArray(response)) {
+			if (response.length === 0) {
+				return [{
+					name: 'No layers found',
+					value: '',
+					description: 'This template has no editable layers',
+				}];
+			}
+
+			return response.map((layer: any) => {
+				const layerType = layer.type || 'unknown';
+				return {
+					name: layer.layer || layer.name || 'Unnamed',
+					value: layer.layer || layer.name || '',
+					description: `${layerType} layer`,
+				};
+			});
+		}
+
+		return [{
+			name: 'Error loading layers',
+			value: '',
+			description: 'Unexpected response format',
+		}];
+	} catch (error) {
+		return [{
+			name: `Error: ${(error as Error).message}`,
+			value: '',
+			description: 'Failed to load layers',
+		}];
+	}
+}
+
 export async function renderPresend(
 	this: IExecuteSingleFunctions,
 	opts: IHttpRequestOptions,
@@ -154,24 +198,199 @@ export async function renderPresend(
 		params.template = templateLocator.value;
 	}
 
-	opts.body = formatParams(
-		params,
-		{
-			template: idFn,
-			layers: idFn,
-			webhookUrl: idFn,
-			format: idFn,
-			transparent: idFn,
-		},
-		{
-			renders: transformSingleProp('renders'),
-		},
-	);
+	// Build the request body
+	const body: Record<string, any> = {};
 
-	// Transform the layers array to an object
-	opts = transformLayers(opts);
+	// Required parameter
+	if (params.template) {
+		body.template = params.template;
+	}
+
+	// Format parameter
+	if (params.format) {
+		body.format = params.format;
+	}
+
+	// Video-specific parameters (only when format is mp4)
+	if (params.format === 'mp4') {
+		if (params.duration && params.duration !== 5000) {
+			body.duration = params.duration;
+		}
+		if (params.fps && params.fps !== 30) {
+			body.fps = params.fps;
+		}
+	}
+
+	// PDF-specific parameters (only when format is pdf)
+	if (params.format === 'pdf') {
+		if (params.flatten === true) {
+			body.flatten = true;
+		}
+		if (params.cmyk === true) {
+			body.cmyk = true;
+		}
+	}
+
+	// PNG-specific parameters (only when format is png)
+	if (params.format === 'png') {
+		if (params.transparent === true) {
+			body.transparent = true;
+		}
+	}
+
+	// Handle layers based on mode
+	const layersMode = params.layersMode || 'simple';
+
+	if (layersMode === 'json' && params.layersJson) {
+		// Advanced JSON mode
+		try {
+			const layersObj = typeof params.layersJson === 'string'
+				? JSON.parse(params.layersJson)
+				: params.layersJson;
+			if (Object.keys(layersObj).length > 0) {
+				body.layers = layersObj;
+			}
+		} catch (e) {
+			// If JSON parsing fails, skip
+		}
+	} else if (layersMode === 'simple' && params.layers && typeof params.layers === 'object') {
+		// Simple form mode
+		const layersInput = params.layers as { layer?: Layer[] };
+		if (Array.isArray(layersInput.layer) && layersInput.layer.length > 0) {
+			body.layers = transformLayersToObject(layersInput.layer);
+		}
+	}
+
+	// Handle multi-page content
+	if (params.pages && typeof params.pages === 'object') {
+		const pagesInput = params.pages as { page?: Array<{ pageId: string; layersJson: string }> };
+		if (Array.isArray(pagesInput.page) && pagesInput.page.length > 0) {
+			body.pages = pagesInput.page.map((p) => {
+				let layersObj = {};
+				try {
+					layersObj = typeof p.layersJson === 'string' ? JSON.parse(p.layersJson) : p.layersJson;
+				} catch (e) {
+					// If JSON parsing fails, use empty object
+				}
+				return {
+					page: p.pageId,
+					layers: layersObj,
+				};
+			});
+			// When using pages, remove the layers parameter
+			delete body.layers;
+		}
+	}
+
+	// Handle additional options
+	if (params.additionalOptions && typeof params.additionalOptions === 'object') {
+		const additionalOptions = params.additionalOptions as Record<string, any>;
+
+		if (additionalOptions.name && additionalOptions.name.trim() !== '') {
+			body.name = additionalOptions.name;
+		}
+		if (additionalOptions.background && additionalOptions.background.trim() !== '') {
+			body.background = additionalOptions.background;
+		}
+		if (additionalOptions.width && additionalOptions.width > 0) {
+			body.width = additionalOptions.width;
+		}
+		if (additionalOptions.height && additionalOptions.height > 0) {
+			body.height = additionalOptions.height;
+		}
+		if (additionalOptions.scale && additionalOptions.scale !== 1) {
+			body.scale = additionalOptions.scale;
+		}
+		if (additionalOptions.async === true) {
+			body.async = true;
+		}
+		if (additionalOptions.webhook_url && additionalOptions.webhook_url.trim() !== '') {
+			body.webhook_url = additionalOptions.webhook_url;
+		}
+		if (additionalOptions.merge === true) {
+			body.merge = true;
+		}
+	}
+
+	opts.body = body;
 
 	return opts;
+}
+
+/**
+ * Transform the layers array into the API expected object format
+ * Only includes properties that the user has explicitly set (non-default values)
+ */
+function transformLayersToObject(layers: Layer[]): Record<string, any> {
+	const result: Record<string, any> = {};
+
+	for (const layer of layers) {
+		if (!layer.layerName) continue;
+
+		const layerObj: Record<string, any> = {};
+
+		// Process each layer property, excluding empty/default values
+		for (const [key, value] of Object.entries(layer)) {
+			// Skip the layerName as it becomes the key
+			if (key === 'layerName') continue;
+
+			// Handle nested additionalProperties collection
+			if (key === 'additionalProperties' && typeof value === 'object' && value !== null) {
+				for (const [propKey, propValue] of Object.entries(value)) {
+					if (shouldIncludeValue(propKey, propValue)) {
+						layerObj[propKey] = propValue;
+					}
+				}
+				continue;
+			}
+
+			if (shouldIncludeValue(key, value)) {
+				layerObj[key] = value;
+			}
+		}
+
+		// Only add the layer if it has properties to modify
+		if (Object.keys(layerObj).length > 0) {
+			result[layer.layerName] = layerObj;
+		}
+	}
+
+	return result;
+}
+
+/**
+ * Check if a value should be included in the request
+ */
+function shouldIncludeValue(key: string, value: any): boolean {
+	// Skip empty strings
+	if (value === '') return false;
+
+	// Skip false booleans - only include 'hide' when explicitly set to true
+	if (value === false) return false;
+
+	// Skip null/undefined
+	if (value === null || value === undefined) return false;
+
+	// Skip zero values for ALL numeric fields
+	if (value === 0) return false;
+
+	// Skip opacity if it's the default value of 1
+	if (key === 'opacity' && value === 1) return false;
+
+	// Skip default font_weight value
+	if (key === 'font_weight' && value === 'normal') return false;
+
+	// Skip default alignment values
+	if (key === 'horizontal_align' && value === 'left') return false;
+	if (key === 'vertical_align' && value === 'top') return false;
+
+	// Skip default object_fit value
+	if (key === 'object_fit' && value === 'cover') return false;
+
+	// Skip default barcode format
+	if (key === 'barcode_format' && value === 'CODE128') return false;
+
+	return true;
 }
 
 export async function templatePresend(
@@ -211,6 +430,110 @@ export async function mergeRendersPresend(
 		ids: renderIds,
 		host: params.host,
 	};
+
+	return opts;
+}
+
+export async function createTemplatePresend(
+	this: IExecuteSingleFunctions,
+	opts: IHttpRequestOptions,
+): Promise<IHttpRequestOptions> {
+	const params = getAllParams(this);
+
+	const body: Record<string, any> = {};
+
+	// Required parameters
+	if (params.templateName) {
+		body.name = params.templateName;
+	}
+	if (params.width) {
+		body.width = params.width;
+	}
+	if (params.height) {
+		body.height = params.height;
+	}
+
+	// Parse layers JSON
+	if (params.layersJson) {
+		try {
+			const layers = typeof params.layersJson === 'string'
+				? JSON.parse(params.layersJson)
+				: params.layersJson;
+			body.layers = layers;
+		} catch (e) {
+			// If JSON parsing fails, try to use as-is
+			body.layers = params.layersJson;
+		}
+	}
+
+	opts.body = body;
+
+	return opts;
+}
+
+export async function updateTemplatePresend(
+	this: IExecuteSingleFunctions,
+	opts: IHttpRequestOptions,
+): Promise<IHttpRequestOptions> {
+	const params = getAllParams(this);
+
+	// Handle resource locator for templateId parameter
+	if (params.templateId && typeof params.templateId === 'object') {
+		const templateLocator = params.templateId as { mode: string; value: string };
+		params.templateId = templateLocator.value;
+	}
+
+	// Handle replaceLayers query parameter
+	if (params.replaceLayers === true) {
+		opts.qs = opts.qs || {};
+		opts.qs.replaceLayers = 'true';
+	}
+
+	const body: Record<string, any> = {};
+
+	// Handle update fields
+	if (params.updateFields && typeof params.updateFields === 'object') {
+		const updateFields = params.updateFields as Record<string, any>;
+
+		if (updateFields.name && updateFields.name.trim() !== '') {
+			body.name = updateFields.name;
+		}
+		if (updateFields.description && updateFields.description.trim() !== '') {
+			body.description = updateFields.description;
+		}
+		if (updateFields.width && updateFields.width > 0) {
+			body.width = updateFields.width;
+		}
+		if (updateFields.height && updateFields.height > 0) {
+			body.height = updateFields.height;
+		}
+
+		// Parse layers JSON if provided
+		if (updateFields.layers && updateFields.layers.trim() !== '') {
+			try {
+				const layers = typeof updateFields.layers === 'string'
+					? JSON.parse(updateFields.layers)
+					: updateFields.layers;
+				body.layers = layers;
+			} catch (e) {
+				// If JSON parsing fails, skip
+			}
+		}
+
+		// Parse pages JSON if provided
+		if (updateFields.pages && updateFields.pages.trim() !== '') {
+			try {
+				const pages = typeof updateFields.pages === 'string'
+					? JSON.parse(updateFields.pages)
+					: updateFields.pages;
+				body.pages = pages;
+			} catch (e) {
+				// If JSON parsing fails, skip
+			}
+		}
+	}
+
+	opts.body = body;
 
 	return opts;
 }

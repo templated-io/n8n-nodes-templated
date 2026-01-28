@@ -1,6 +1,6 @@
 import { INodeType, INodeTypeDescription } from 'n8n-workflow';
 import {allProperties} from './descriptions';
-import { loadTemplates } from './GenericFunctions';
+import { loadTemplates, loadTemplateLayers } from './GenericFunctions';
 
 export class Templated implements INodeType {
 	description: INodeTypeDescription = {
@@ -13,14 +13,18 @@ export class Templated implements INodeType {
 			{
 				'createRender': 'Create a Render',
 				'retrieveRender': 'Retrieve a Render',
+				'mergeRenders': 'Merge Renders',
+				'createTemplate': 'Create a Template',
+				'updateTemplate': 'Update a Template',
 				'retrieveTemplate': 'Retrieve a Template',
+				'cloneTemplate': 'Clone a Template',
 				'listTemplates': 'List All Templates',
 				'listTemplateLayers': 'List Template Layers',
-				'listTemplateRenders': 'List Template Renders',
-				'mergeRenders': 'Merge Renders'
+				'listTemplatePages': 'List Template Pages',
+				'listTemplateRenders': 'List Template Renders'
 			}[$parameter["operation"]] || $parameter["operation"]
 		}}`,
-		description: 'Automate the generation of images and PDFs with Templated (https://templated.io).',
+		description: 'Automate the generation of images, videos, and PDFs with Templated (https://templated.io).',
 		defaults: {
 			name: 'Templated',
 		},
@@ -46,7 +50,7 @@ export class Templated implements INodeType {
 
 	methods = {
 		loadOptions: {
-			// Keep this for any future dropdown options
+			loadTemplateLayers,
 		},
 		listSearch: {
 			loadTemplates,
