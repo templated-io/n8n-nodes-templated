@@ -24,7 +24,7 @@ export class Templated implements INodeType {
 				'listTemplateRenders': 'List Template Renders'
 			}[$parameter["operation"]] || $parameter["operation"]
 		}}`,
-		description: 'Automate the generation of images, videos, and PDFs with Templated (https://templated.io).',
+		description: 'Automate the generation of images, videos, and PDFs with Templated (https://templated.io)',
 		defaults: {
 			name: 'Templated',
 		},
