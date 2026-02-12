@@ -573,10 +573,10 @@ const renderFields: INodeProperties[] = [
 				name: 'scale',
 				type: 'number',
 				default: 1,
-				description: 'Scale factor (0.1 to 2.0). Example: 0.5 renders at 50% size.',
+				description: 'Scale factor (0.1 to 3.0). Example: 0.5 renders at 50% size, 2 renders at 200% size.',
 				typeOptions: {
 					minValue: 0.1,
-					maxValue: 2.0,
+					maxValue: 3.0,
 					numberStepSize: 0.1,
 				},
 			},

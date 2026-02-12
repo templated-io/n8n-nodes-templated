@@ -282,29 +282,30 @@ export async function renderPresend(
 		}
 	}
 
-	// Handle additional options (getAllParams flattens them into params)
-	if (params.name && typeof params.name === 'string' && (params.name as string).trim() !== '') {
-		body.name = params.name;
+	// Handle additional options - read directly to avoid getAllParams flattening issues
+	const additionalOptions = this.getNodeParameter('additionalOptions', {}) as Record<string, any>;
+	if (additionalOptions.name && additionalOptions.name.trim() !== '') {
+		body.name = additionalOptions.name;
 	}
-	if (params.background && typeof params.background === 'string' && (params.background as string).trim() !== '') {
-		body.background = params.background;
+	if (additionalOptions.background && additionalOptions.background.trim() !== '') {
+		body.background = additionalOptions.background;
 	}
-	if (params.width && (params.width as number) > 0) {
-		body.width = params.width;
+	if (additionalOptions.width && additionalOptions.width > 0) {
+		body.width = additionalOptions.width;
 	}
-	if (params.height && (params.height as number) > 0) {
-		body.height = params.height;
+	if (additionalOptions.height && additionalOptions.height > 0) {
+		body.height = additionalOptions.height;
 	}
-	if (params.scale && (params.scale as number) !== 1) {
-		body.scale = params.scale;
+	if (additionalOptions.scale && additionalOptions.scale !== 1) {
+		body.scale = additionalOptions.scale;
 	}
-	if (params.async === true) {
+	if (additionalOptions.async === true) {
 		body.async = true;
 	}
-	if (params.webhook_url && typeof params.webhook_url === 'string' && (params.webhook_url as string).trim() !== '') {
-		body.webhook_url = params.webhook_url;
+	if (additionalOptions.webhook_url && additionalOptions.webhook_url.trim() !== '') {
+		body.webhook_url = additionalOptions.webhook_url;
 	}
-	if (params.merge === true) {
+	if (additionalOptions.merge === true) {
 		body.merge = true;
 	}
 
