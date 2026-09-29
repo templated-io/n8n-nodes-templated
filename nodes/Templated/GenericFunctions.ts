@@ -1,6 +1,18 @@
 import type { IExecuteSingleFunctions, IHttpRequestOptions, ILoadOptionsFunctions, INodeListSearchResult, INodePropertyOptions } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 
 const addOptName = 'additionalOptions';
+
+const parseJsonParam = (execFns: IExecuteSingleFunctions, value: unknown, fieldName: string): any => {
+	if (typeof value !== 'string') {
+		return value;
+	}
+	try {
+		return JSON.parse(value);
+	} catch (error) {
+		throw new NodeOperationError(execFns.getNode(), `Invalid JSON in "${fieldName}": ${(error as Error).message}`);
+	}
+};
 
 const getAllParams = (execFns: IExecuteSingleFunctions): Record<string, unknown> => {
 	const params = execFns.getNode().parameters;
@@ -243,15 +255,9 @@ export async function renderPresend(
 
 	if (layersMode === 'json' && params.layersJson) {
 		// Advanced JSON mode
-		try {
-			const layersObj = typeof params.layersJson === 'string'
-				? JSON.parse(params.layersJson)
-				: params.layersJson;
-			if (Object.keys(layersObj).length > 0) {
-				body.layers = layersObj;
-			}
-		} catch (e) {
-			// If JSON parsing fails, skip
+		const layersObj = parseJsonParam(this, params.layersJson, 'Layers (JSON)');
+		if (layersObj && Object.keys(layersObj).length > 0) {
+			body.layers = layersObj;
 		}
 	} else if (layersMode === 'simple' && params.layers && typeof params.layers === 'object') {
 		// Simple form mode
@@ -265,18 +271,10 @@ export async function renderPresend(
 	if (params.pages && typeof params.pages === 'object') {
 		const pagesInput = params.pages as { page?: Array<{ pageId: string; layersJson: string }> };
 		if (Array.isArray(pagesInput.page) && pagesInput.page.length > 0) {
-			body.pages = pagesInput.page.map((p) => {
-				let layersObj = {};
-				try {
-					layersObj = typeof p.layersJson === 'string' ? JSON.parse(p.layersJson) : p.layersJson;
-				} catch (e) {
-					// If JSON parsing fails, use empty object
-				}
-				return {
-					page: p.pageId,
-					layers: layersObj,
-				};
-			});
+			body.pages = pagesInput.page.map((p) => ({
+				page: p.pageId,
+				layers: parseJsonParam(this, p.layersJson, `Pages > ${p.pageId} > Layers (JSON)`) ?? {},
+			}));
 			// When using pages, remove the layers parameter
 			delete body.layers;
 		}
@@ -452,15 +450,7 @@ export async function createTemplatePresend(
 
 	// Parse layers JSON
 	if (params.layersJson) {
-		try {
-			const layers = typeof params.layersJson === 'string'
-				? JSON.parse(params.layersJson)
-				: params.layersJson;
-			body.layers = layers;
-		} catch (e) {
-			// If JSON parsing fails, try to use as-is
-			body.layers = params.layersJson;
-		}
+		body.layers = parseJsonParam(this, params.layersJson, 'Layers (JSON)');
 	}
 
 	opts.body = body;
@@ -507,26 +497,12 @@ export async function updateTemplatePresend(
 
 		// Parse layers JSON if provided
 		if (updateFields.layers && updateFields.layers.trim() !== '') {
-			try {
-				const layers = typeof updateFields.layers === 'string'
-					? JSON.parse(updateFields.layers)
-					: updateFields.layers;
-				body.layers = layers;
-			} catch (e) {
-				// If JSON parsing fails, skip
-			}
+			body.layers = parseJsonParam(this, updateFields.layers, 'Layers');
 		}
 
 		// Parse pages JSON if provided
 		if (updateFields.pages && updateFields.pages.trim() !== '') {
-			try {
-				const pages = typeof updateFields.pages === 'string'
-					? JSON.parse(updateFields.pages)
-					: updateFields.pages;
-				body.pages = pages;
-			} catch (e) {
-				// If JSON parsing fails, skip
-			}
+			body.pages = parseJsonParam(this, updateFields.pages, 'Pages');
 		}
 	}
 

@@ -1,5 +1,5 @@
 {
-	"node": "n8n-nodes-templated",
+	"node": "n8n-nodes-templated.templated",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": [
