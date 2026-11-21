@@ -7,7 +7,21 @@ import {
 	createTemplatePresend,
 	updateTemplatePresend,
 } from '../GenericFunctions';
-import { INodeProperties } from 'n8n-workflow';
+import type { INodeProperties, INodeRequestSend, PreSendAction } from 'n8n-workflow';
+
+/**
+ * Builds `routing.send` with `preSend` as a non-enumerable property.
+ *
+ * n8n 1.58 to 1.83 copy the description of every `usableAsTool` node with `structuredClone`,
+ * which throws on functions, so an enumerable `preSend` stopped n8n from starting.
+ * Non-enumerable keys are skipped by that copy, while n8n's RoutingNode still reads
+ * `send.preSend` by plain property access on the original description.
+ */
+function sendWithPreSend(preSend: PreSendAction): INodeRequestSend {
+	const send: INodeRequestSend = {};
+	Object.defineProperty(send, 'preSend', { value: [preSend], enumerable: false });
+	return send;
+}
 
 // Combined operations for better UX - no need for resource selection
 const operations: INodeProperties = {
@@ -24,7 +38,7 @@ const operations: INodeProperties = {
 			action: 'Create a render',
 			description: 'Generate an image, video, or PDF from a template',
 			routing: {
-				send: { preSend: [renderPresend] },
+				send: sendWithPreSend(renderPresend),
 				request: {
 					method: 'POST',
 					url: '/v1/render',
@@ -37,7 +51,7 @@ const operations: INodeProperties = {
 			action: 'Merge renders',
 			description: 'Merge multiple renders into a single PDF',
 			routing: {
-				send: { preSend: [mergeRendersPresend] },
+				send: sendWithPreSend(mergeRendersPresend),
 				request: {
 					method: 'POST',
 					url: '/v1/render/merge',
@@ -63,7 +77,7 @@ const operations: INodeProperties = {
 			action: 'Clone a template',
 			description: 'Create a clone of an existing template (maintains link to source)',
 			routing: {
-				send: { preSend: [templatePresend] },
+				send: sendWithPreSend(templatePresend),
 				request: {
 					method: 'POST',
 					url: '=/v1/template/{{$parameter["templateId"]}}/clone',
@@ -76,7 +90,7 @@ const operations: INodeProperties = {
 			action: 'Create a template',
 			description: 'Create a new template programmatically with layers',
 			routing: {
-				send: { preSend: [createTemplatePresend] },
+				send: sendWithPreSend(createTemplatePresend),
 				request: {
 					method: 'POST',
 					url: '/v1/template',
@@ -101,7 +115,7 @@ const operations: INodeProperties = {
 			action: 'List template layers',
 			description: 'Get all layers of a specific template',
 			routing: {
-				send: { preSend: [templatePresend] },
+				send: sendWithPreSend(templatePresend),
 				request: {
 					method: 'GET',
 					url: '=/v1/template/{{$parameter["templateId"]}}/layers',
@@ -114,7 +128,7 @@ const operations: INodeProperties = {
 			action: 'List template pages',
 			description: 'Get all pages of a multi-page template',
 			routing: {
-				send: { preSend: [templatePresend] },
+				send: sendWithPreSend(templatePresend),
 				request: {
 					method: 'GET',
 					url: '=/v1/template/{{$parameter["templateId"]}}/pages',
@@ -127,7 +141,7 @@ const operations: INodeProperties = {
 			action: 'List template renders',
 			description: 'Get all renders created from a specific template',
 			routing: {
-				send: { preSend: [templatePresend] },
+				send: sendWithPreSend(templatePresend),
 				request: {
 					method: 'GET',
 					url: '=/v1/template/{{$parameter["templateId"]}}/renders',
@@ -140,7 +154,7 @@ const operations: INodeProperties = {
 			action: 'Retrieve a template',
 			description: 'Get details of a specific template',
 			routing: {
-				send: { preSend: [templatePresend] },
+				send: sendWithPreSend(templatePresend),
 				request: {
 					method: 'GET',
 					url: '=/v1/template/{{$parameter["templateId"]}}',
@@ -153,7 +167,7 @@ const operations: INodeProperties = {
 			action: 'Update a template',
 			description: 'Update an existing template (layers, properties, or content)',
 			routing: {
-				send: { preSend: [updateTemplatePresend] },
+				send: sendWithPreSend(updateTemplatePresend),
 				request: {
 					method: 'PUT',
 					url: '=/v1/template/{{$parameter["templateId"]}}',
