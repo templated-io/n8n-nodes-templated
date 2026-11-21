@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-templated",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "n8n node to automate the generation of images, videos, and PDFs with Templated (https://templated.io).",
   "keywords": [
     "n8n-community-node-package"
